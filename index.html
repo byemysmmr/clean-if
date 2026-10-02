@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>이미지 정보 지우개</title>
+<meta name="description" content="@aksdifr">
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+  :root{
+    --ui:"Pretendard",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --bg:#e9e9e6; --panel:#fdfdfc; --panel-2:#f4f4f1; --panel-3:#eaeae6;
+    --line:#dededa; --line-2:#c9c9c3;
+    --ink:#1a1a1a; --ink-2:#66665f; --ink-3:#9a9a92;
+    --accent:#2d4a3e; --accent-soft:#e4ebe7; --on-accent:#fff;
+    --warn:#8a6d1f; --warn-soft:#f6f1df;
+    --danger:#8f3b34; --danger-soft:#f6ebea;
+    --ok:#2d4a3e; --ok-soft:#e4ebe7;
+    --r:10px; --r-sm:7px;
+    --ease:cubic-bezier(.2,.6,.35,1);
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{font-family:var(--ui);background:var(--bg);color:var(--ink);line-height:1.5;
+    letter-spacing:-.01em;-webkit-font-smoothing:antialiased;padding:28px 18px 60px;}
+  button,input,select{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px;}
+  ::selection{background:var(--accent);color:#fff;}
+
+  .wrap{max-width:760px;margin:0 auto;}
+  .head{margin-bottom:18px;}
+  .head h1{font-size:15px;font-weight:700;letter-spacing:.1em;margin:0 0 5px;}
+  .head p{font-size:12px;color:var(--ink-3);margin:0;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;}
+
+  /* 끌어다 놓는 자리 */
+  .drop{border:1.5px dashed var(--line-2);border-radius:var(--r);padding:34px 16px;text-align:center;
+    background:var(--panel-2);cursor:pointer;transition:background .15s var(--ease),border-color .15s;}
+  .drop:hover,.drop.over{background:var(--accent-soft);border-color:var(--accent);}
+  .drop b{display:block;font-size:13.5px;font-weight:600;margin-bottom:4px;}
+  .drop span{font-size:11.5px;color:var(--ink-3);}
+
+  /* 설정 */
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;
+    padding:14px;background:var(--panel-2);border-radius:var(--r);}
+  .fld{display:flex;flex-direction:column;min-width:0;}
+  .fld.full{grid-column:1/-1;}
+  .lab{font-size:11px;font-weight:600;color:var(--ink-3);letter-spacing:.02em;margin:0 0 7px;}
+  select,input[type=number]{width:100%;height:36px;padding:0 11px;background:var(--panel);
+    border:1px solid var(--line);color:var(--ink);border-radius:var(--r-sm);font-size:13px;}
+  select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:30px;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16' fill='none' stroke='%239a9a92' stroke-width='1.5'><path d='M4 6.5l4 4 4-4'/></svg>");
+    background-repeat:no-repeat;background-position:right 10px center;}
+  select:focus,input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft);}
+
+  .seg{display:flex;border-bottom:1px solid var(--line);}
+  .seg button{flex:1 1 0;border:none;background:none;cursor:pointer;padding:9px 4px 8px;margin-bottom:-1px;
+    font-size:12.5px;font-weight:600;color:var(--ink-3);border-bottom:2px solid transparent;
+    transition:color .16s var(--ease),border-color .16s var(--ease);}
+  .seg button:hover{color:var(--ink-2);}
+  .seg button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--accent);}
+
+  .rangerow{display:flex;align-items:center;gap:10px;}
+  .rangerow input[type=range]{flex:1;accent-color:var(--accent);}
+  .rangerow b{font-size:12px;font-variant-numeric:tabular-nums;color:var(--ink);min-width:38px;text-align:right;}
+
+  .chk{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;font-size:12.5px;}
+  .chk input{appearance:none;-webkit-appearance:none;width:17px;height:17px;flex:none;margin:0;
+    border:1px solid var(--line-2);border-radius:4px;background:var(--panel);cursor:pointer;position:relative;}
+  .chk input:checked{background:var(--accent);border-color:var(--accent);}
+  .chk input:checked::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;
+    border:solid #fff;border-width:0 2px 2px 0;transform:rotate(43deg);}
+
+  /* 목록 */
+  .list{margin-top:16px;display:flex;flex-direction:column;gap:7px;}
+  .empty{text-align:center;color:var(--ink-3);font-size:12.5px;padding:22px 0;}
+  .row{display:flex;align-items:center;gap:12px;padding:10px;background:var(--panel);
+    border:1px solid var(--line);border-radius:var(--r);}
+  .thumb{width:50px;height:50px;flex:none;border-radius:6px;object-fit:cover;background:var(--panel-3);}
+  .mid{flex:1;min-width:0;}
+  .nm{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .sz{font-size:11px;color:var(--ink-3);margin-top:2px;font-variant-numeric:tabular-nums;}
+  .sz i{color:var(--accent);font-style:normal;font-weight:700;margin:0 4px;}
+  .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;}
+  .tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;
+    background:var(--warn-soft);color:var(--warn);}
+  .tag.none{background:var(--panel-3);color:var(--ink-3);}
+  .state{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;flex:none;}
+  .s-wait{background:var(--panel-3);color:var(--ink-3);}
+  .s-work{background:var(--accent-soft);color:var(--accent);}
+  .s-done{background:var(--ok-soft);color:var(--ok);}
+  .s-fail{background:var(--danger-soft);color:var(--danger);}
+  .acts{display:flex;gap:5px;flex:none;}
+
+  .btn{border-radius:var(--r-sm);cursor:pointer;font-size:12.5px;font-weight:600;
+    display:inline-flex;align-items:center;justify-content:center;height:36px;padding:0 14px;
+    transition:transform .1s var(--ease),background .16s,border-color .16s,filter .16s;}
+  .btn:active{transform:scale(.98);}
+  .btn[disabled]{opacity:.42;pointer-events:none;}
+  .go{background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);}
+  .go:hover{filter:brightness(1.22);}
+  .sub{background:transparent;color:var(--ink);border:1px solid var(--line-2);}
+  .sub:hover{background:var(--panel-2);}
+  .mini{height:28px;padding:0 10px;font-size:11.5px;background:transparent;
+    border:1px solid var(--line);color:var(--ink-2);border-radius:6px;cursor:pointer;}
+  .mini:hover{background:var(--panel-2);color:var(--ink);}
+  .mini[disabled]{opacity:.4;pointer-events:none;}
+
+  .bar{display:flex;gap:7px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap;}
+  .note{font-size:11.5px;color:var(--ink-3);line-height:1.7;margin-top:16px;
+    padding:12px 14px;background:var(--panel-2);border-radius:var(--r);border-left:2px solid var(--accent);}
+  .note b{color:var(--ink-2);}
+
+  @media (max-width:560px){
+    .opts{grid-template-columns:1fr;}
+    .row{flex-wrap:wrap;}
+    .mid{flex:1 0 100%;order:3;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>이미지 정보 지우개</h1>
+    <p>사진에 딸려 있는 촬영 정보와 숨은 기록을 지웁니다</p>
+  </div>
+
+  <div class="card">
+    <div class="drop" id="drop">
+      <b>클릭하거나 이미지를 끌어다 놓으세요</b>
+      <span>PNG · JPG · WebP · 여러 장 한꺼번에</span>
+      <input id="file" type="file" accept="image/png,image/jpeg,image/webp" multiple hidden>
+    </div>
+
+    <div class="opts">
+      <div class="fld">
+        <div class="lab">저장 형식</div>
+        <div class="seg" id="segFmt">
+          <button type="button" data-v="png" aria-pressed="true">PNG</button>
+          <button type="button" data-v="jpg" aria-pressed="false">JPG</button>
+          <button type="button" data-v="webp" aria-pressed="false">WebP</button>
+        </div>
+      </div>
+
+      <div class="fld" id="qFld" style="display:none">
+        <div class="lab">품질</div>
+        <div class="rangerow">
+          <input id="q" type="range" min="50" max="100" step="1" value="92">
+          <b id="qv">92%</b>
+        </div>
+      </div>
+
+      <div class="fld">
+        <div class="lab">투명한 부분</div>
+        <div class="seg" id="segAlpha">
+          <button type="button" data-v="flat" aria-pressed="true">흰색으로 채우기</button>
+          <button type="button" data-v="keep" aria-pressed="false">그대로 두기</button>
+        </div>
+      </div>
+
+      <div class="fld">
+        <div class="lab">크기 줄이기</div>
+        <label class="chk" style="height:36px">
+          <input type="checkbox" id="doResize">
+          <span>긴 변을 <input type="number" id="maxSide" value="1600" min="200" max="8000" step="100"
+            style="width:72px;height:26px;display:inline-block;vertical-align:middle;margin:0 2px"> px 까지</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="list" id="list">
+      <div class="empty" id="empty">아직 올린 이미지가 없습니다</div>
+    </div>
+
+    <div class="bar">
+      <button class="btn sub" id="clear" disabled>전체 비우기</button>
+      <button class="btn sub" id="dlzip" disabled>ZIP으로 받기</button>
+      <button class="btn go" id="go" disabled>지우기</button>
+    </div>
+
+    <p class="note" id="note">
+      모든 처리는 이 브라우저 안에서만 일어납니다. 사진이 어디로도 올라가지 않아요<br>
+      <b>흰색으로 채우기</b>를 고르면 투명한 부분이 흰색이 되는 대신, 투명 영역에 숨겨둔 기록까지 사라집니다
+    </p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function(){
+'use strict';
+var $=function(id){ return document.getElementById(id); };
+var drop=$('drop'), file=$('file'), list=$('list'), empty=$('empty');
+
+var opt={ fmt:'png', alpha:'flat' };
+var items=[], seq=0;
+
+/* ===================== 설정 ===================== */
+[['segFmt','fmt'],['segAlpha','alpha']].forEach(function(p){
+  var seg=$(p[0]);
+  seg.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click', function(){
+      seg.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+      b.setAttribute('aria-pressed','true');
+      opt[p[1]]=b.getAttribute('data-v');
+      sync();
+    });
+  });
+});
+$('q').addEventListener('input', function(){ $('qv').textContent=$('q').value+'%'; });
+$('doResize').addEventListener('change', sync);
+
+function sync(){
+  $('qFld').style.display = (opt.fmt==='png') ? 'none' : '';
+  var has=items.length>0;
+  $('clear').disabled=!has;
+  $('go').disabled=!items.some(function(x){ return x.state!=='done'; });
+  $('dlzip').disabled=!items.some(function(x){ return x.state==='done'; });
+  empty.style.display=has?'none':'';
+  // JPG 는 투명을 못 담는다
+  var jpg=(opt.fmt==='jpg');
+  $('segAlpha').querySelectorAll('button').forEach(function(b){
+    b.disabled = jpg && b.getAttribute('data-v')==='keep';
+    b.style.opacity = b.disabled ? '.4' : '';
+  });
+  if(jpg && opt.alpha==='keep'){
+    opt.alpha='flat';
+    $('segAlpha').querySelectorAll('button').forEach(function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-v')==='flat' ? 'true':'false');
+    });
+  }
+}
+
+/* ===================== 파일에 뭐가 들었는지 보기 =====================
+   사진을 새로 그리기 전에, 원본 안에 어떤 기록이 들어 있는지 먼저 읽어 둔다.
+   지웠다는 말만 하는 것보다 무엇을 지웠는지 보여주는 편이 낫다. */
+function txt(u,s,n){ var o=''; for(var i=s;i<s+n && i<u.length;i++) o+=String.fromCharCode(u[i]); return o; }
+
+function sniff(buf){
+  var u=new Uint8Array(buf), dv=new DataView(buf);
+  var out={ type:'', found:[], alpha:false };
+  function add(x){ if(x && out.found.indexOf(x)===-1) out.found.push(x); }
+
+  // PNG
+  if(u[0]===0x89 && txt(u,1,3)==='PNG'){
+    out.type='PNG';
+    var p=8;
+    while(p+8<=u.length){
+      var len=dv.getUint32(p), t=txt(u,p+4,4);
+      if(len<0 || p+12+len>u.length+12) break;
+      if(t==='IHDR'){ var ct=u[p+8+9]; out.alpha=(ct===4||ct===6); }
+      else if(t==='tEXt'||t==='zTXt'||t==='iTXt'){
+        var s=p+8, e=s;
+        while(e<s+len && u[e]!==0) e++;
+        add(txt(u,s,e-s) || '텍스트');
+      }
+      else if(t==='eXIf') add('EXIF');
+      else if(t==='tIME') add('수정 시각');
+      else if(t==='IEND') break;
+      p+=12+len;
+    }
+    return out;
+  }
+
+  // JPEG
+  if(u[0]===0xFF && u[1]===0xD8){
+    out.type='JPEG';
+    var p2=2;
+    while(p2+4<u.length && u[p2]===0xFF){
+      var m=u[p2+1];
+      if(m===0x01 || (m>=0xD0 && m<=0xD9)){ p2+=2; continue; }
+      if(m===0xDA) break;
+      var l=(u[p2+2]<<8)|u[p2+3];
+      if(l<2) break;
+      if(m===0xE0) add('JFIF');
+      else if(m===0xE1){
+        var tag=txt(u,p2+4,5);
+        if(tag.indexOf('Exif')===0) add('EXIF');
+        else if(tag.indexOf('http')===0) add('XMP');
+        else add('APP1');
+      }
+      else if(m===0xE2) add('색 프로파일');
+      else if(m===0xED) add('IPTC');
+      else if(m===0xEE) add('Adobe');
+      else if(m===0xFE) add('주석');
+      p2+=2+l;
+    }
+    return out;
+  }
+
+  // WebP
+  if(txt(u,0,4)==='RIFF' && txt(u,8,4)==='WEBP'){
+    out.type='WebP';
+    var p3=12;
+    while(p3+8<=u.length){
+      var c=txt(u,p3,4), cl=dv.getUint32(p3+4,true);
+      if(c==='EXIF') add('EXIF');
+      else if(c==='XMP ') add('XMP');
+      else if(c==='ALPH') out.alpha=true;
+      else if(c==='VP8L') out.alpha=true;
+      p3+=8+cl+(cl&1);
+      if(cl<0) break;
+    }
+    return out;
+  }
+
+  out.type='알 수 없음';
+  return out;
+}
+
+/* ===================== 목록 ===================== */
+function size(b){
+  return b<1024 ? b+' B' : b<1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(2)+' MB';
+}
+function add(files){
+  var n=0;
+  for(var i=0;i<files.length;i++){
+    var f=files[i];
+    if(!f.type || f.type.indexOf('image/')!==0) continue;
+    var it={ id:++seq, file:f, url:URL.createObjectURL(f), state:'wait', blob:null, out:'', outSize:0, info:null };
+    items.push(it); draw(it); read(it); n++;
+  }
+  if(n) sync();
+}
+function read(it){
+  var r=new FileReader();
+  r.onload=function(){
+    try{ it.info=sniff(r.result); }catch(e){ it.info={type:'',found:[],alpha:false}; }
+    paint(it);
+  };
+  r.onerror=function(){ paint(it); };
+  r.readAsArrayBuffer(it.file);
+}
+function draw(it){
+  var d=document.createElement('div');
+  d.className='row'; d.id='row'+it.id;
+  d.innerHTML='<img class="thumb" alt=""><div class="mid">'+
+    '<div class="nm"></div><div class="sz"></div><div class="tags"></div></div>'+
+    '<span class="state s-wait">대기</span>'+
+    '<div class="acts"><button class="mini" data-dl disabled>받기</button>'+
+    '<button class="mini" data-rm>삭제</button></div>';
+  d.querySelector('.thumb').src=it.url;
+  d.querySelector('.nm').textContent=it.file.name;
+  d.querySelector('.sz').textContent=size(it.file.size);
+  d.querySelector('[data-dl]').addEventListener('click', function(){ save(it); });
+  d.querySelector('[data-rm]').addEventListener('click', function(){ remove(it.id); });
+  list.appendChild(d);
+}
+function paint(it){
+  var d=$('row'+it.id); if(!d) return;
+  var st=d.querySelector('.state'), sz=d.querySelector('.sz'), tg=d.querySelector('.tags');
+
+  if(it.info){
+    tg.innerHTML='';
+    var f=it.info.found.slice();
+    if(it.info.alpha && opt.alpha==='flat') f.push('투명 영역');
+    if(f.length){
+      f.forEach(function(x){
+        var s=document.createElement('span'); s.className='tag'; s.textContent=x; tg.appendChild(s);
+      });
+    } else {
+      var s2=document.createElement('span'); s2.className='tag none'; s2.textContent='딸린 정보 없음'; tg.appendChild(s2);
+    }
+  }
+
+  if(it.state==='wait'){ st.className='state s-wait'; st.textContent='대기'; }
+  if(it.state==='work'){ st.className='state s-work'; st.textContent='지우는 중'; }
+  if(it.state==='fail'){ st.className='state s-fail'; st.textContent='실패'; sz.textContent=it.err||'실패'; }
+  if(it.state==='done'){
+    st.className='state s-done'; st.textContent='완료';
+    sz.innerHTML=size(it.file.size)+'<i>→</i>'+size(it.outSize)+
+      ' ('+Math.round(it.outSize/it.file.size*100)+'%)';
+    d.querySelector('[data-dl]').disabled=false;
+  }
+}
+function remove(id){
+  for(var i=0;i<items.length;i++){
+    if(items[i].id===id){
+      URL.revokeObjectURL(items[i].url);
+      items.splice(i,1);
+      var d=$('row'+id); if(d) d.remove();
+      break;
+    }
+  }
+  sync();
+}
+$('clear').addEventListener('click', function(){
+  items.forEach(function(x){ URL.revokeObjectURL(x.url); });
+  items=[];
+  list.innerHTML=''; list.appendChild(empty);
+  sync();
+});
+
+/* ===================== 지우기 =====================
+   사진을 캔버스에 다시 그리면 픽셀만 남고 원본에 붙어 있던 기록은 전부 떨어져 나간다.
+   투명 영역에 숨긴 데이터는 알파값을 모두 불투명으로 덮어써야 사라진다. */
+function mime(f){ return f==='jpg'?'image/jpeg':f==='webp'?'image/webp':'image/png'; }
+
+function clean(it){
+  return new Promise(function(done){
+    it.state='work'; paint(it);
+    var img=new Image();
+    img.onload=function(){
+      try{
+        var w=img.naturalWidth, h=img.naturalHeight;
+
+        if($('doResize').checked){
+          var mx=Math.max(200, Math.min(8000, parseInt($('maxSide').value,10)||1600));
+          var long=Math.max(w,h);
+          if(long>mx){ var k=mx/long; w=Math.round(w*k); h=Math.round(h*k); }
+        }
+
+        var c=document.createElement('canvas');
+        c.width=w; c.height=h;
+        var ctx=c.getContext('2d');
+        ctx.imageSmoothingEnabled=true;
+        if(ctx.imageSmoothingQuality!==undefined) ctx.imageSmoothingQuality='high';
+
+        var flat=(opt.alpha==='flat') || opt.fmt==='jpg';
+        if(flat){ ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h); }
+        ctx.drawImage(img,0,0,w,h);
+
+        if(flat){
+          // 알파값을 전부 불투명으로 — 투명 영역에 숨긴 기록이 여기서 깨진다
+          var d=ctx.getImageData(0,0,w,h), a=d.data;
+          for(var i=3;i<a.length;i+=4) a[i]=255;
+          ctx.putImageData(d,0,0);
+        }
+
+        var type=mime(opt.fmt);
+        var q=(opt.fmt==='png') ? undefined : (parseInt($('q').value,10)/100);
+        c.toBlob(function(b){
+          if(!b){ it.state='fail'; it.err='저장 실패'; paint(it); sync(); done(); return; }
+          it.blob=b; it.outSize=b.size;
+          it.out=it.file.name.replace(/\.[^.]+$/,'')+'_clean.'+opt.fmt;
+          it.state='done'; paint(it); sync(); done();
+        }, type, q);
+      }catch(e){
+        it.state='fail'; it.err='처리 실패'; paint(it); sync(); done();
+      }
+    };
+    img.onerror=function(){ it.state='fail'; it.err='열 수 없는 파일'; paint(it); sync(); done(); };
+    img.src=it.url;
+  });
+}
+
+$('go').addEventListener('click', function(){
+  var btn=this, old=btn.textContent;
+  btn.disabled=true; btn.textContent='지우는 중…';
+  var chain=Promise.resolve();
+  items.forEach(function(it){
+    chain=chain.then(function(){ if(it.state!=='done') return clean(it); });
+  });
+  chain.then(function(){ btn.textContent=old; sync(); });
+});
+
+/* ===================== 내려받기 ===================== */
+function pull(blob,name){
+  var u=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=u; a.download=name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(u); }, 4000);
+}
+function save(it){ if(it.blob) pull(it.blob, it.out); }
+
+$('dlzip').addEventListener('click', function(){
+  var done=items.filter(function(x){ return x.state==='done'; });
+  if(!done.length) return;
+  if(done.length===1){ save(done[0]); return; }
+  var btn=this, old=btn.textContent;
+  btn.disabled=true; btn.textContent='묶는 중…';
+  var zip=new JSZip();
+  done.forEach(function(it){ zip.file(it.out, it.blob); });
+  zip.generateAsync({type:'blob'}).then(function(b){
+    pull(b, 'clean.zip');
+    btn.textContent=old; sync();
+  }).catch(function(){
+    btn.textContent=old; sync();
+    done.forEach(function(it,i){ setTimeout(function(){ save(it); }, i*300); });
+  });
+});
+
+/* ===================== 끌어다 놓기 ===================== */
+drop.addEventListener('click', function(){ file.click(); });
+file.addEventListener('change', function(){ if(file.files.length) add(file.files); file.value=''; });
+drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', function(){ drop.classList.remove('over'); });
+drop.addEventListener('drop', function(e){
+  e.preventDefault(); drop.classList.remove('over');
+  if(e.dataTransfer.files.length) add(e.dataTransfer.files);
+});
+window.addEventListener('dragover', function(e){ e.preventDefault(); });
+window.addEventListener('drop', function(e){ e.preventDefault(); });
+
+sync();
+})();
+</script>
+</body>
+</html>
